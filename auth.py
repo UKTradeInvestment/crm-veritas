@@ -4,6 +4,7 @@ import jwt
 import os
 
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
 from oic import rndstr
 from oic.oic import Client
@@ -26,17 +27,21 @@ from werkzeug.utils import redirect
 # 9. "I haz cookie. Gimmie"
 #
 
-SECRET = os.getenv("VERITAS_SECRET", "secret")
-COOKIE = "arbiter"
+# Tap veritas.conf if it's available
+if os.path.exists("/etc/veritas.conf"):
+    load_dotenv("/etc/veritas.conf")
+
+SECRET = os.getenv("VERITAS_AUTH_SECRET")
+COOKIE = "veritas"
 
 database = {}  # A poor man's database
 
 
 class Oidc(object):
 
-    CLIENT_ID = "ce058762-5f66-4bbe-85b2-ed617ca4ee9e"
-    CLIENT_SECRET = "4D+DTGv1uQLeXlX6JXuQy+9cCecPllqrtc34t+N+Nb4="
-    APP_TOKEN = "86be2709-019a-432f-8e59-7057d078dd00"
+    CLIENT_ID = os.getenv("VERITAS_CLIENT_ID")
+    CLIENT_SECRET = os.getenv("VERITAS_CLIENT_SECRET")
+    APP_TOKEN = os.getenv("VERITAS_APP_TOKEN")
 
     ENDPOINT_DOMAIN = "login.microsoftonline.com"
     AUTH_ENDPOINT = "https://{}/{}/oauth2/authorize".format(

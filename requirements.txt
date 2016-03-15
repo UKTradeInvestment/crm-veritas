@@ -1,4 +1,5 @@
 PyJWT
 flask
 python-dateutil
+python-dotenv
 oic
