@@ -1,0 +1,5 @@
+AUTH_SERVER = "http://azure.danielquinn.org:5000/"
+BASTION_SERVER = "http://azure.danielquinn.org:5001/"
+DATA_SERVER = "http://azure.danielquinn.org:5002/"
+HEADER_NAME = "X-Nested-Token"
+COOKIE = "veritas4"

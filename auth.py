@@ -13,6 +13,8 @@ from oic.oic.message import AuthorizationResponse, RegistrationResponse
 
 from werkzeug.utils import redirect
 
+from common import COOKIE
+
 #
 # The path the user will take
 #
@@ -32,7 +34,6 @@ if os.path.exists("/etc/veritas.conf"):
     load_dotenv("/etc/veritas.conf")
 
 SECRET = os.getenv("VERITAS_AUTH_SECRET")
-COOKIE = "veritas"
 
 database = {}  # A poor man's database
 
@@ -63,7 +64,6 @@ class Oidc(object):
         """
         Step 4: Auth server to UI: "Dunno, ask Micros~1". Redirect to Azure
         """
-        print("_authenticate")
 
         if flask.g.get('userinfo', None):
             return self.callback()
@@ -121,23 +121,25 @@ def oauth2():
     browser and bounce them back to the app server.
     """
 
-    azure_response = oidc.client.parse_response(
+    auth_response = oidc.client.parse_response(
         AuthorizationResponse,
         info=str(flask.request.query_string, "utf-8"),
         sformat="urlencoded"
     )
 
-    if not azure_response["state"] == flask.session["state"]:
+    if not auth_response["state"] == flask.session["state"]:
         return flask.abort(403)
-
+    print(auth_response)
+    print(auth_response["state"])
+    user = oidc.client.do_user_info_request(state=auth_response["state"])
+    print(user)
     now = datetime.utcnow()
     payload = {
-        "id": rndstr(),
+        "user": user,
         "created": now.isoformat(),
         "expires": (now + timedelta(minutes=30)).isoformat()
     }
-
-    database[payload["id"]] = "Daniel"
+    # print(payload)
     response = redirect(flask.session["eventual-target"])
     response.set_cookie(COOKIE, jwt.encode(payload, SECRET))
 

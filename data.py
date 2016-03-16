@@ -7,13 +7,14 @@ import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
+from common import HEADER_NAME
+
 # Tap veritas.conf if it's available
 if os.path.exists("/etc/veritas.conf"):
     load_dotenv("/etc/veritas.conf")
 
 AUTH_SECRET = os.getenv("VERITAS_AUTH_SECRET")
 BASTION_SECRET = os.getenv("VERITAS_BASTION_SECRET")
-HEADER_NAME = "X-Nested-Token"
 FORCE_REAUTH = 8  # After n hours, force a re-authentication
 
 
@@ -78,4 +79,4 @@ def endpoint():
 
 if __name__ == '__main__':
     app.secret_key = "secret"
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5002)
