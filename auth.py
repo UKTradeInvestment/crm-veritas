@@ -1,147 +1,79 @@
-import functools
 import flask
 import jwt
 import os
+import requests
+import uuid
 
-from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
-from oic import rndstr
-from oic.oic import Client
-from oic.utils.authn.client import CLIENT_AUTHN_METHOD
-from oic.oic.message import AuthorizationResponse, RegistrationResponse
+from common import COOKIE, AUTH_SERVER, AZURE
 
-from werkzeug.utils import redirect
+# Tap the environment file if it's available
+if os.path.exists(".env"):
+    load_dotenv(".env")
 
-from common import COOKIE
+SECRET = os.getenv("AUTH_SECRET")
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 
-#
-# The path the user will take
-#
-# 1. UI to App server: Initial request
-# 2. App server to UI: Rejected: redirect to the auth server
-# 3. UI to auth server: "Can I haz auth?"                                      <
-# 4. Auth server to UI: "Dunno, ask Micros~1". Redirect to Azure               <
-# 5. UI to Azure: Go through the proof process
-# 6. Azure to UI: Accepted. Redirect to the auth server
-# 7. UI to auth server: "See? I'm legit!"                                      <
-# 8. Auth server to UI: Accepted.  Set cookie.  Redirect to app server.        <
-# 9. "I haz cookie. Gimmie"
-#
+REDIRECT_URI = "{}/oauth2".format(AUTH_SERVER)
 
-# Tap veritas.conf if it's available
-if os.path.exists("/etc/veritas.conf"):
-    load_dotenv("/etc/veritas.conf")
-
-SECRET = os.getenv("VERITAS_AUTH_SECRET")
-
-database = {}  # A poor man's database
-
-
-class Oidc(object):
-
-    CLIENT_ID = os.getenv("VERITAS_CLIENT_ID")
-    CLIENT_SECRET = os.getenv("VERITAS_CLIENT_SECRET")
-    APP_TOKEN = os.getenv("VERITAS_APP_TOKEN")
-
-    ENDPOINT_DOMAIN = "login.microsoftonline.com"
-    AUTH_ENDPOINT = "https://{}/{}/oauth2/authorize".format(
-        ENDPOINT_DOMAIN, APP_TOKEN)
-    TOKEN_ENDPOINT = "https://{}/{}/oauth2/token".format(
-        ENDPOINT_DOMAIN, APP_TOKEN)
-
-    REDIRECT_URI = "http://azure.danielquinn.org:5000/oauth2"
-
-    def __init__(self):
-        self.callback = None
-        self.client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
-        self.client.store_registration_info(RegistrationResponse(
-            client_secret=self.CLIENT_SECRET,
-            client_id=self.CLIENT_ID
-        ))
-
-    def _authenticate(self):
-        """
-        Step 4: Auth server to UI: "Dunno, ask Micros~1". Redirect to Azure
-        """
-
-        if flask.g.get('userinfo', None):
-            return self.callback()
-
-        flask.session["eventual-target"] = flask.request.args.get("next")
-        flask.session["state"] = str(rndstr())
-        flask.session["nonce"] = str(rndstr())
-        login_url = self.client.construct_AuthorizationRequest(request_args={
-            "client_id": self.client.client_id,
-            "response_type": "code",
-            "scope": ["openid"],
-            "redirect_uri": self.REDIRECT_URI,
-            "state": flask.session["state"],
-            "nonce": flask.session["nonce"],
-        }).request(self.client.authorization_endpoint)
-
-        return redirect("https://{}/{}/oauth2/authorize{}".format(
-            self.ENDPOINT_DOMAIN,
-            self.APP_TOKEN,
-            login_url
-        ))
-
-    def auth(self, fn):
-        """
-        :type fn: function
-
-        Step 3: UI to auth server: "Can I haz auth?"
-        """
-
-        self.callback = fn
-
-        @functools.wraps(fn)
-        def wrapper():
-            return self._authenticate()
-
-        return wrapper
-
+AZURE_AUTHORISE = "{}/common/oauth2/authorize".format(AZURE)
 
 app = flask.Flask(__name__)
-oidc = Oidc()
 
 
 @app.route('/')
-@oidc.auth
 def index():
-    return redirect(flask.session["eventual-target"])
+
+    next_error = "You must specify a next= parameter."
+
+    # if flask.request.cookies.get(COOKIE):
+    #     if "next" in flask.session:
+    #         return flask.redirect(flask.session["next"])
+    #     if "HTTP_REFERER" in flask.request.environ:
+    #         return flask.redirect(flask.request.environ["HTTP_REFERER"])
+    #     return flask.abort(400, description=next_error)
+
+    if "next" not in flask.request.args:
+        return flask.abort(400, description=next_error)
+
+    flask.session["next"] = flask.request.args["next"]
+    flask.session["state"] = str(uuid.uuid4())
+
+    return flask.redirect(requests.Request(
+        "GET",
+        AZURE_AUTHORISE,
+        params={
+            "response_type": "code",
+            "client_id": CLIENT_ID,
+            "redirect_uri": REDIRECT_URI,
+            "state": flask.session["state"]
+        }
+    ).prepare().url)
 
 
 @app.route('/oauth2')
 def oauth2():
     """
-    This is where Azure drops the user after it's done with them.  It sends
-    along a bunch of encoded data, which we decode to verify the redirect.  Then
-    we generate a JSON web token (jwt), stuff it into a cookie on the user's
-    browser and bounce them back to the app server.
+    This is where Azure drops the user after it's done with them.
     """
 
-    auth_response = oidc.client.parse_response(
-        AuthorizationResponse,
-        info=str(flask.request.query_string, "utf-8"),
-        sformat="urlencoded"
-    )
+    if "code" not in flask.request.args:
+        return flask.redirect("/")
 
-    if not auth_response["state"] == flask.session["state"]:
+    if "state" not in flask.request.args:
         return flask.abort(403)
-    print(auth_response)
-    print(auth_response["state"])
-    user = oidc.client.do_user_info_request(state=auth_response["state"])
-    print(user)
-    now = datetime.utcnow()
-    payload = {
-        "user": user,
-        "created": now.isoformat(),
-        "expires": (now + timedelta(minutes=30)).isoformat()
-    }
-    # print(payload)
-    response = redirect(flask.session["eventual-target"])
-    response.set_cookie(COOKIE, jwt.encode(payload, SECRET))
+
+    if not flask.request.args["state"] == flask.session["state"]:
+        return flask.abort(403)
+
+    response = flask.redirect(flask.session["next"])
+    response.set_cookie(
+        COOKIE, jwt.encode({
+            "code": flask.request.args["code"],
+            "nonce": str(uuid.uuid4())
+        }, SECRET))
 
     return response
 
