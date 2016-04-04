@@ -39,6 +39,10 @@ library, so setting up can either be done by setting environment
 variables the old fashioned way or by placing the required values into
 a filed called `.env`:
 
+    AUTH_SERVER="http://localhost:5000"
+    BASTION_SERVER="http://localhost:5001"
+    DATA_SERVER="http://localhost:5002"
+
     AUTH_SECRET="this is a different secret"
     BASTION_SECRET="this is a secret"
     CLIENT_ID="<comes from Azure>"

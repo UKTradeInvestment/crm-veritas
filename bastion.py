@@ -7,7 +7,7 @@ import requests
 
 from dotenv import load_dotenv
 
-from common import AUTH_SERVER, COOKIE, DATA_SERVER, HEADER_NAME
+from veritas import Veritas
 
 # Tap the environment file if it's available
 if os.path.exists(".env"):
@@ -17,6 +17,10 @@ SECRET = os.getenv("BASTION_SECRET")
 
 
 app = flask.Flask(__name__)
+veritas = Veritas(
+    bastion_server=os.getenv("BASTION_SERVER"),
+    bastion_secret=os.getenv("BASTION_SECRET")
+)
 
 
 @app.route("/")
@@ -25,14 +29,9 @@ def index():
     # No cookie? Come back when you have one.
     # Strictly speaking, this should never happen because the UI should be
     # smart enough not to hit up the bastion server without a cookie.
-    if COOKIE not in flask.request.cookies:
-        return flask.abort(400, description=requests.Request(
-            "GET",
-            AUTH_SERVER,
-            params={
-                "next": flask.redirect(flask.request.environ["HTTP_REFERER"])
-            }
-        ).prepare().url)
+    if veritas.COOKIE not in flask.request.cookies:
+        return flask.abort(
+            400, description=veritas.get_bastion_redirect_url("/"))
 
     # Relay the request to the data server and create a response for the client
     # with whatever we got.  We don't do any processing of the relayed request
