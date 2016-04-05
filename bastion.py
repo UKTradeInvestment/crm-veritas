@@ -3,7 +3,6 @@
 import flask
 import jwt
 import os
-import requests
 
 from dotenv import load_dotenv
 
@@ -12,9 +11,6 @@ from veritas import Veritas
 # Tap the environment file if it's available
 if os.path.exists(".env"):
     load_dotenv(".env")
-
-SECRET = os.getenv("BASTION_SECRET")
-
 
 app = flask.Flask(__name__)
 veritas = Veritas(
@@ -27,8 +23,6 @@ veritas = Veritas(
 def index():
 
     # No cookie? Come back when you have one.
-    # Strictly speaking, this should never happen because the UI should be
-    # smart enough not to hit up the bastion server without a cookie.
     if veritas.COOKIE not in flask.request.cookies:
         return flask.abort(
             400, description=veritas.get_bastion_redirect_url("/"))
@@ -37,27 +31,28 @@ def index():
     # with whatever we got.  We don't do any processing of the relayed request
     # here because the bastion host doesn't have the means to verify the auth
     # server's jwt.
-    data_response = requests.get(
-        "{}/arbitrary-endpoint".format(DATA_SERVER),
-        params=flask.request.args,
-        headers={
-            HEADER_NAME: jwt.encode(
-                {"token": flask.request.cookies[COOKIE]},
-                SECRET
-            )
-        }
+    data_response = veritas.get_data_response(
+        "/arbitrary-endpoint",
+        flask.request.args,
+        flask.request.cookies[veritas.COOKIE]
     )
 
     if data_response.status_code >= 300:
         return flask.abort(data_response.status_code, data_response.text)
 
-    response = flask.make_response(data_response.text)
+    response = flask.make_response(
+        data_response.text,
+        data_response.status_code
+    )
 
-    # Set a new cookie based on the auth token found inside the response from
-    # the data server.
+    # There's an auth token in the data server's response header, so we set it
+    # as a new cookie.
     response.set_cookie(
-        COOKIE,
-        jwt.decode(data_response.headers[HEADER_NAME], SECRET)["session"]
+        veritas.COOKIE,
+        jwt.decode(
+            data_response.headers[veritas.HEADER_NAME],
+            veritas.bastion_secret
+        )["session"]
     )
 
     return response

@@ -41,6 +41,8 @@ class Veritas(object):
         self.bastion_server = bastion_server
         self.bastion_secret = bastion_secret
 
+    # Auth
+
     def get_auth_url(self, state, redirect_path):
         """
         Strictly speaking, the `state` parameter is optional, but as it
@@ -72,9 +74,14 @@ class Veritas(object):
             "nonce": str(uuid.uuid4())
         }, self.AUTH_SECRET))
 
+    # Bastion
+
     def get_bastion_redirect_url(self, nxt):
         """
-        The URL we bounce users too if they don't have a cookie.
+        The URL we bounce users too if they don't have a cookie.  Strictly
+        speaking, this shouldn't happen because users should never come directly
+        to the bastion, but it's entirely likely that the UI will hit a bastion
+        URL as a means of testing whether the user has a cookie or not.
 
         :param nxt: (str) The URL you want the user to return to after she's
                           been authenticated.  Typically, this is the URL
@@ -83,3 +90,18 @@ class Veritas(object):
         return requests.Request("GET", self.AUTH_SERVER, params={
             "next": self.bastion_server + nxt
         }).prepare().url
+
+    def get_data_response(self, path, args, cookie):
+        return requests.get(
+            self.DATA_SERVER + path,
+            params=args,
+            headers={
+                self.HEADER_NAME: jwt.encode(
+                    {"token": cookie},
+                    self.bastion_secret)
+            }
+        )
+
+    def generate_bastion_cookie(self):
+        return jwt.decode(data_response.headers[veritas.HEADER_NAME], veritas.bastion_secret)["session"]
+    # Data
