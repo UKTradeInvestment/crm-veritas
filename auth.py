@@ -27,8 +27,9 @@ def index():
     flask.session["next"] = flask.request.args["next"]
     flask.session["state"] = str(uuid.uuid4())
 
-    return flask.redirect(
-        veritas.get_auth_url(flask.session["state"], "/oauth2"))
+    url = veritas.get_auth_url(flask.session["state"])
+    print("Redirecting: {}".format(url))
+    return flask.redirect(url)
 
 
 @app.route('/oauth2')
@@ -53,5 +54,5 @@ def oauth2():
 
 
 if __name__ == '__main__':
-    app.secret_key = "secret"
+    app.secret_key = veritas.AUTH_SECRET
     app.run(debug=True, port=5000)

@@ -1,5 +1,3 @@
-# Bastion server example
-
 import flask
 import jwt
 import os
@@ -52,12 +50,12 @@ def index():
         jwt.decode(
             data_response.headers[veritas.HEADER_NAME],
             veritas.bastion_secret
-        )["session"]
+        )[veritas.SESSION]
     )
 
     return response
 
 
 if __name__ == "__main__":
-    app.secret_key = "secret"
+    app.secret_key = veritas.bastion_secret
     app.run(debug=True, port=5001)

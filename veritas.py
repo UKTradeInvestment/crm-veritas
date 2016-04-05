@@ -11,10 +11,14 @@ if os.path.exists(".env"):
     load_dotenv(".env")
 
 
-class Veritas(object):
+class TokenError(Exception):
 
-    AZURE = "https://login.microsoftonline.com"
-    AZURE_AUTHORISE = "{}/common/oauth2/authorize".format(AZURE)
+    def __init__(self, message, status_code=400, *args, **kwargs):
+        self.status_code = status_code
+        Exception.__init__(self, *tuple([message] + list(args)), **kwargs)
+
+
+class Veritas(object):
 
     # Some of these may be null depending on the environment
     AUTH_SERVER = os.getenv("AUTH_SERVER")
@@ -23,9 +27,17 @@ class Veritas(object):
     DATA_SECRET = os.getenv("DATA_SECRET")
     CLIENT_ID = os.getenv("CLIENT_ID")
     CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+    APP_TOKEN = os.getenv("APP_TOKEN")
 
     HEADER_NAME = "X-Cerebro-Token"
     COOKIE = "veritas"
+    SESSION = "session"
+    TOKEN = "token"
+
+    AZURE = "https://login.microsoftonline.com"
+    AZURE_AUTHORISE = "{}/common/oauth2/authorize".format(AZURE)
+    AZURE_TOKEN = "{}/{}/oauth2/token".format(AZURE, APP_TOKEN)
+    REDIRECT_URI = AUTH_SERVER + "/oauth2"
 
     def __init__(self, bastion_server=None, bastion_secret=None):
         """
@@ -43,7 +55,7 @@ class Veritas(object):
 
     # Auth
 
-    def get_auth_url(self, state, redirect_path):
+    def get_auth_url(self, state):
         """
         Strictly speaking, the `state` parameter is optional, but as it
         protects against XSS attacks, we're making it mandatory here.
@@ -51,13 +63,11 @@ class Veritas(object):
         :param state:         (str) A random string, verified by the auth
                                     server when Azure bounces the user back
                                     there.
-        :param redirect_path: (str) The URL to which you want Azure to return
-                                    the user when it's finished with them.
         """
         return requests.Request("GET", self.AZURE_AUTHORISE, params={
             "response_type": "code",
             "client_id": self.CLIENT_ID,
-            "redirect_uri": self.AUTH_SERVER + redirect_path,
+            "redirect_uri": self.REDIRECT_URI,
             "state": state
         }).prepare().url
 
@@ -97,11 +107,50 @@ class Veritas(object):
             params=args,
             headers={
                 self.HEADER_NAME: jwt.encode(
-                    {"token": cookie},
+                    {self.TOKEN: cookie},
                     self.bastion_secret)
             }
         )
 
-    def generate_bastion_cookie(self):
-        return jwt.decode(data_response.headers[veritas.HEADER_NAME], veritas.bastion_secret)["session"]
     # Data
+
+    def get_token_from_headers(self, headers):
+
+        # No cookie: fail
+        if self.HEADER_NAME not in headers:
+            raise TokenError("No bastion token specified", status_code=403)
+
+        try:
+            return jwt.decode(headers[self.HEADER_NAME], self.bastion_secret)
+        except jwt.InvalidTokenError:
+            raise TokenError("No valid bastion token found")
+
+    def get_identity_from_nested_token(self, bastion):
+
+        if "token" not in bastion:
+            raise TokenError("The bastion token was malformed")
+
+        try:
+            auth = jwt.decode(bastion[self.TOKEN], self.AUTH_SECRET)
+        except jwt.InvalidTokenError:
+            raise TokenError("No valid auth token found")
+
+        if "code" not in auth:
+            raise TokenError("The auth token was malformed")
+
+        # Get user data from Azure
+        response = requests.post(self.AZURE_TOKEN, {
+            "client_id": self.CLIENT_ID,
+            "client_secret": self.CLIENT_SECRET,
+            "code": auth["code"],
+            "grant_type": "authorization_code",
+            "redirect_uri": self.REDIRECT_URI,
+            "resource": "https://graph.windows.net"
+        })
+
+        if response.status_code >= 300:
+            raise TokenError(response.text, response.status_code)
+
+        # Parse that user data for useful information and dump it into a user
+        # model if you like.
+        return jwt.decode(response.json()["id_token"], verify=False)
