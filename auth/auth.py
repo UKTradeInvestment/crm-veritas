@@ -48,7 +48,8 @@ def oauth2():
         return flask.abort(403)
 
     response = flask.redirect(flask.session["next"])
-    veritas.set_auth_cookie(response, flask.request.args["code"])
+    response.set_cookie(
+        veritas.COOKIE, veritas.get_auth_cookie(flask.request.args["code"]))
 
     return response
 

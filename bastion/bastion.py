@@ -4,7 +4,7 @@ import os
 
 from dotenv import load_dotenv
 
-from veritas import Veritas
+from veritas.veritas import Veritas
 
 # Tap the environment file if it's available
 if os.path.exists(".env"):

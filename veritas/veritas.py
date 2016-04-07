@@ -71,7 +71,7 @@ class Veritas(object):
             "state": state
         }).prepare().url
 
-    def set_auth_cookie(self, response, code):
+    def get_auth_cookie(self, code):
         """
         Set the auth cookie before sending the response to the user.
 
@@ -79,10 +79,10 @@ class Veritas(object):
         :param code:     (str)      The big long string that Azure sends back
                                     along with the client to the auth server.
         """
-        response.set_cookie(self.COOKIE, jwt.encode({
-            "code": code,
-            "nonce": str(uuid.uuid4())
-        }, self.AUTH_SECRET))
+        return jwt.encode(
+            {"code": code, "nonce": str(uuid.uuid4())},
+            self.AUTH_SECRET
+        )
 
     # Bastion
 
@@ -101,22 +101,36 @@ class Veritas(object):
             "next": self.bastion_server + nxt
         }).prepare().url
 
-    def get_data_response(self, path, args, cookie):
+    def get_data_response(self, path, args, token):
+        """
+        Hit the data server with the request that hit the bastion server, taking
+        care to include a header with the right auth data, signed by the bastion
+        server.
+        :param path: (str) The URL path
+        :param args: (dict) The arguments (if any)
+        :param token: (str) The jwt for auth on the data end
+        """
         return requests.get(
             self.DATA_SERVER + path,
             params=args,
             headers={
                 self.HEADER_NAME: jwt.encode(
-                    {self.TOKEN: cookie},
-                    self.bastion_secret)
+                    {self.TOKEN: token},
+                    self.bastion_secret
+                )
             }
         )
 
     # Data
 
     def get_token_from_headers(self, headers):
+        """
+        Try to find and decode the auth token data in the request header.
 
-        # No cookie: fail
+        :param headers: A dictionary of headers in the request.
+        """
+
+        # No header: fail
         if self.HEADER_NAME not in headers:
             raise TokenError("No bastion token specified", status_code=403)
 
@@ -126,6 +140,15 @@ class Veritas(object):
             raise TokenError("No valid bastion token found")
 
     def get_identity_from_nested_token(self, bastion):
+        """
+        This method isn't always necessary, as most requests will contain a
+        session value rather than an auth token.  The first request however will
+        only contain an auth token, so the data server will need to validate it
+        against the Azure AD web service and return some identity information
+        from what it finds there.
+
+        :param bastion: (dict) The decoded jwt from the bastion request
+        """
 
         if "token" not in bastion:
             raise TokenError("The bastion token was malformed")
@@ -151,6 +174,5 @@ class Veritas(object):
         if response.status_code >= 300:
             raise TokenError(response.text, response.status_code)
 
-        # Parse that user data for useful information and dump it into a user
-        # model if you like.
+        # Parse that user data for useful information
         return jwt.decode(response.json()["id_token"], verify=False)
