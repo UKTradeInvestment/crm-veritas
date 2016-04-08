@@ -7,8 +7,6 @@ exec(open("veritas/version.py").read())
 with open("requirements.txt") as f:
     install_requires = f.readlines()
 
-tests_require = ["nose", "responses"]
-
 # Allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
@@ -27,7 +25,10 @@ with open(readme_path) as readme:
         url="https://github.com/UKTradeInvestment/crm-veritas",
         download_url="https://github.com/UKTradeInvestment/crm-veritas",
         install_requires=install_requires,
-        tests_require=tests_require,
+        tests_require=[
+            "nose",
+            "responses"
+        ],
         test_suite="nose.collector",
         classifiers=[
             "Operating System :: POSIX",

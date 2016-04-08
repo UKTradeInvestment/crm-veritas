@@ -3,7 +3,7 @@ import responses
 
 from unittest import TestCase
 from urllib.parse import urlparse
-from veritas.veritas import Veritas
+from veritas.veritas import Veritas, TokenError
 
 
 class VeritasTest(TestCase):
@@ -58,32 +58,38 @@ class VeritasTest(TestCase):
     @responses.activate
     def test_get_identity_from_nested_token(self):
 
-        class MockResponse(object):
-
-            status_code = 200
-
-            def json(self):
-                return {
-                    "id_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvaWQiO"
-                                "jEyMywiZmFtaWx5X25hbWUiOiJGYW1pbHkiLCJnaXZlbl9"
-                                "uYW1lIjoiR2l2ZW4ifQ.MDfAGcDi7XjNhbLnEkQHexOnbz"
-                                "PsSVbSfBRrjkVT4xI"
-                }
+        self.veritas.AUTH_SECRET = "secret"
+        self.veritas.AZURE_TOKEN = "{}/app-token/oauth2/token".format(
+            self.veritas.AZURE
+        )
 
         responses.add(
             responses.POST,
-            "https://login.microsoftonline.com/app-token/",
-            body='{"error": "not found"}',
-            status=404,
+            "https://login.microsoftonline.com/app-token/oauth2/token",
+            body='{"id_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvaWQiOj'
+                 'EyMywiZmFtaWx5X25hbWUiOiJGYW1pbHkiLCJnaXZlbl9uYW1lIjoiR2l2ZW4'
+                 'ifQ.MDfAGcDi7XjNhbLnEkQHexOnbzPsSVbSfBRrjkVT4xI"}',
+            status=200,
             content_type='application/json'
         )
 
-        self.veritas.AUTH_SECRET = "secret"
         info = self.veritas.get_identity_from_nested_token({
             "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2RlIjoidGhp"
                      "cyBpcyBhIGNvZGUifQ.piTpeboWlE6pYu7t6hHI2mNECvuLtDNp2R"
                      "AIDDoiJP4"
-        }),
-        self.assertEqual(info["oid"], "123")
+        })
+
+        self.assertEqual(info["oid"], 123)
         self.assertEqual(info["family_name"], "Family")
         self.assertEqual(info["given_name"], "Given")
+
+        # Expected exceptions
+        with self.assertRaises(TokenError):
+            self.veritas.get_identity_from_nested_token({"not-a-token": "x"})
+        with self.assertRaises(TokenError):
+            self.veritas.get_identity_from_nested_token({"token": "broken"})
+        with self.assertRaises(TokenError):
+            self.veritas.get_identity_from_nested_token({
+                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub3QiOiJhIHRv"
+                         "a2VuIn0.YxSUDNLukXozOo3JbXsr8XvCzAsa13ZK0vtF2nX-wn4"
+            })
