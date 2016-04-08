@@ -3,12 +3,10 @@ import responses
 
 from unittest import TestCase
 from urllib.parse import urlparse
-from veritas.veritas import Veritas, TokenError
+from ukti.datahub.veritas import Veritas, TokenError
 
 
 class VeritasTest(TestCase):
-
-    maxDiff = None
 
     def setUp(self):
         
