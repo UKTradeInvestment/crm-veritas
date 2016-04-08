@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 
 
 # Tap the environment file if it's available
-if os.path.exists(".env"):
-    load_dotenv(".env")
+if os.path.exists("/etc/veritas.conf"):
+    load_dotenv("/etc/veritas.conf")
 
 
 class TokenError(Exception):
@@ -99,7 +99,7 @@ class Veritas(object):
                           they're trying to visit on the bastion host.
         """
         return requests.Request("GET", self.AUTH_SERVER, params={
-            "next": self.bastion_server + nxt
+            "next": "{}{}".format(self.bastion_server, nxt)
         }).prepare().url
 
     def get_data_response(self, path, args, token):

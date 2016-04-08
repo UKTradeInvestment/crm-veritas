@@ -9,11 +9,11 @@ import os
 
 from dotenv import load_dotenv
 
-from veritas.veritas import Veritas, TokenError
+from ukti.datahub.veritas import Veritas
 
 # Tap the environment file if it's available
-if os.path.exists(".env"):
-    load_dotenv(".env")
+if os.path.exists("/etc/veritas.conf"):
+    load_dotenv("/etc/veritas.conf")
 
 app = flask.Flask(__name__)
 veritas = Veritas(bastion_secret=os.getenv("BASTION_SECRET"))

@@ -1,6 +1,8 @@
+import os
+
 from unittest import TestCase
 
-from bastion import app
+from ukti.datahub.bastion import app
 
 
 class BastionTestCase(TestCase):
@@ -8,6 +10,9 @@ class BastionTestCase(TestCase):
     def setUp(self):
         app.config['TESTING'] = True
         self.app = app.test_client()
+
+        os.environ["BASTION_SERVER"] = "http://localhost:5001"
+        os.environ["BASTION_SECRET"] = "secret"
 
     def test_authentication_process(self):
         """
@@ -18,4 +23,7 @@ class BastionTestCase(TestCase):
         #    host for user data.  This request should be rejected of course,
         #    since we presently don't have any cookie containing session data.
 
-        self.assertEqual(self.app.get('/').status_code, 400)
+        for url in ("/", "/anything", "/anything/else", "/asdf?jkl=semicolon"):
+            r = self.app.get(url)
+            self.assertEqual(r.status_code, 400, url)
+            self.assertEqual(r.data.split()[-1], "x", url)

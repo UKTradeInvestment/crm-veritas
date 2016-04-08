@@ -3,6 +3,7 @@ import responses
 
 from unittest import TestCase
 from urllib.parse import urlparse
+
 from ukti.datahub.veritas import Veritas, TokenError
 
 
