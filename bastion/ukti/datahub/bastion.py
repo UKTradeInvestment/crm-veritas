@@ -4,7 +4,9 @@ import os
 
 from dotenv import load_dotenv
 
-from veritas.veritas import Veritas
+from ukti.datahub.veritas import Veritas
+
+__version__ = (0, 0, 1)
 
 # Tap the environment file if it's available
 if os.path.exists(".env"):

@@ -20,6 +20,8 @@ class TokenError(Exception):
 
 class Veritas(object):
 
+    __version__ = (0, 0, 1)
+
     # Some of these may be null depending on the environment
     AUTH_SERVER = os.getenv("AUTH_SERVER")
     AUTH_SECRET = os.getenv("AUTH_SECRET")
@@ -37,7 +39,7 @@ class Veritas(object):
     AZURE = "https://login.microsoftonline.com"
     AZURE_AUTHORISE = "{}/common/oauth2/authorize".format(AZURE)
     AZURE_TOKEN = "{}/{}/oauth2/token".format(AZURE, APP_TOKEN)
-    REDIRECT_URI = AUTH_SERVER + "/oauth2"
+    REDIRECT_URI = "{}/{}".format(AUTH_SERVER, "oauth2")
 
     def __init__(self, bastion_server=None, bastion_secret=None):
         """
@@ -75,7 +77,6 @@ class Veritas(object):
         """
         Set the auth cookie before sending the response to the user.
 
-        :param response: (response) A Flask response object
         :param code:     (str)      The big long string that Azure sends back
                                     along with the client to the auth server.
         """

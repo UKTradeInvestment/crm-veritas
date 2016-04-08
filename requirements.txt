@@ -1,5 +1,0 @@
-PyJWT
-flask
-python-dotenv
-requests
-responses

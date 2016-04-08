@@ -4,6 +4,8 @@ import uuid
 from veritas import Veritas
 
 
+__version__ = (0, 0, 1)
+
 app = flask.Flask(__name__)
 veritas = Veritas()
 
