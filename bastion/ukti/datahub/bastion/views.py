@@ -2,10 +2,16 @@ import flask
 import jwt
 import os
 
+from dotenv import load_dotenv
 from flask.views import View
 
 from ukti.datahub.veritas import Veritas
-from ukti.datahub.bastion.app import BadRequestException
+from ukti.datahub.bastion.exceptions import BadRequestException
+
+
+# Tap the environment file if it's available
+if os.path.exists("/etc/veritas.conf"):
+    load_dotenv("/etc/veritas.conf")
 
 
 class BastionView(View):
@@ -23,9 +29,13 @@ class BastionView(View):
 
         # No cookie? Come back when you have one.
         if self.veritas.COOKIE not in flask.request.cookies:
-            raise BadRequestException(self.veritas.get_bastion_redirect_url(
-                flask.request.path
-            ))
+            # We have to manually assemble nxt here because
+            # flask.request.full_path attaches a "?" for absolutely no reason.
+            nxt = flask.request.path
+            if flask.request.query_string:
+                nxt += "?{}".format(flask.request.query_string.decode("utf-8"))
+            raise BadRequestException(
+                self.veritas.get_bastion_redirect_url(nxt))
 
         # Relay the request to the data server and create a response for the
         # client with whatever we got.  We don't do any processing of the

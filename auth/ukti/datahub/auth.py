@@ -1,7 +1,7 @@
 import flask
 import uuid
 
-from veritas import Veritas
+from ukti.datahub.veritas import Veritas
 
 
 __version__ = (0, 0, 1)
@@ -24,13 +24,14 @@ def index():
             400, description="You must specify a next= parameter.")
 
     if flask.request.cookies.get(veritas.COOKIE):
-        return flask.redirect(flask.session["next"])
+        if "next" in flask.session:
+            return flask.redirect(flask.session["next"])
 
     flask.session["next"] = flask.request.args["next"]
     flask.session["state"] = str(uuid.uuid4())
 
     url = veritas.get_auth_url(flask.session["state"])
-    print("Redirecting: {}".format(url))
+
     return flask.redirect(url)
 
 
@@ -44,6 +45,9 @@ def oauth2():
         return flask.redirect("/")
 
     if "state" not in flask.request.args:
+        return flask.abort(403)
+
+    if "state" not in flask.session:
         return flask.abort(403)
 
     if not flask.request.args["state"] == flask.session["state"]:
