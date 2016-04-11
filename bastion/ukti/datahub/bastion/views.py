@@ -1,21 +1,11 @@
 import flask
 import jwt
 import os
-import random
-import string
 
-from dotenv import load_dotenv
 from flask.views import View
 
 from ukti.datahub.veritas import Veritas
-
-__version__ = (0, 0, 1)
-
-# Tap the environment file if it's available
-if os.path.exists("/etc/veritas.conf"):
-    load_dotenv("/etc/veritas.conf")
-
-app = flask.Flask(__name__)
+from ukti.datahub.bastion.app import BadRequestException
 
 
 class BastionView(View):
@@ -33,12 +23,9 @@ class BastionView(View):
 
         # No cookie? Come back when you have one.
         if self.veritas.COOKIE not in flask.request.cookies:
-            return flask.abort(
-                400,
-                description=self.veritas.get_bastion_redirect_url(
-                    flask.request.path
-                )
-            )
+            raise BadRequestException(self.veritas.get_bastion_redirect_url(
+                flask.request.path
+            ))
 
         # Relay the request to the data server and create a response for the
         # client with whatever we got.  We don't do any processing of the
@@ -69,13 +56,3 @@ class BastionView(View):
         )
 
         return response
-
-
-app.add_url_rule(
-    '/', defaults={"path": ""}, view_func=BastionView.as_view("BastionRoot"))
-app.add_url_rule('/<path:path>', view_func=BastionView.as_view("BastionView"))
-
-if __name__ == "__main__":
-    app.secret_key = ''.join(
-        random.choice(string.ascii_letters + string.digits) for _ in range(64))
-    app.run(debug=True, port=5001)
