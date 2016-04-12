@@ -122,6 +122,19 @@ class Veritas(object):
             }
         )
 
+    def generate_bastion_cookie(self, headers):
+        """
+        The data server is expected to include a special header in all of its
+        responses that we then need to convert to a cookie for the bastion's
+        response to the client.
+
+        :param headers: (dict) All of the headers returned from the data server.
+        """
+        return jwt.decode(
+            headers[self.HEADER_NAME],
+            self.bastion_secret
+        )[self.SESSION]
+
     # Data
 
     def get_token_from_headers(self, headers):
