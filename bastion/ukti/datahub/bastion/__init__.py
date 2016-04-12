@@ -9,6 +9,8 @@ __version__ = (0, 0, 1)
 
 app = flask.Flask(__name__)
 app.config["JSONIFY_PRETTYPRINT_REGULAR"] = False
+app.secret_key = ''.join(
+    random.choice(string.ascii_letters + string.digits) for _ in range(64))
 
 
 #
@@ -35,6 +37,4 @@ app.add_url_rule('/<path:path>',
 
 
 if __name__ == "__main__":
-    app.secret_key = ''.join(
-        random.choice(string.ascii_letters + string.digits) for _ in range(64))
     app.run(debug=True, port=5001)

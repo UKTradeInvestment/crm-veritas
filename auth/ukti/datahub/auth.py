@@ -1,4 +1,6 @@
 import flask
+import random
+import string
 import uuid
 
 from ukti.datahub.veritas import Veritas
@@ -7,6 +9,9 @@ from ukti.datahub.veritas import Veritas
 __version__ = (0, 0, 1)
 
 app = flask.Flask(__name__)
+app.secret_key = ''.join(
+    random.choice(string.ascii_letters + string.digits) for _ in range(64))
+
 veritas = Veritas()
 
 
@@ -61,5 +66,4 @@ def oauth2():
 
 
 if __name__ == '__main__':
-    app.secret_key = veritas.AUTH_SECRET
     app.run(debug=True, port=5000)
