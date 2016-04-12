@@ -41,19 +41,21 @@ class Veritas(object):
     AZURE_TOKEN = "{}/{}/oauth2/token".format(AZURE, APP_TOKEN)
     REDIRECT_URI = "{}/{}".format(AUTH_SERVER, "oauth2")
 
-    def __init__(self, bastion_server=None, bastion_secret=None):
-        """
-        While there's only ever one instance of the auth server, there can be n
-        bastion servers, so we allow the instance to be created with dynamic
-        bastion values.
+    def __init__(self, client_id=None, client_secret=None, app_token=None,
+                 auth_server=None, auth_secret=None,
+                 bastion_server=None, bastion_secret=None,
+                 data_server=None, data_secret=None):
 
-        :param bastion_server: (str) The URL for the bastion server.  Typically
-                                     something like https://mysite.com (note
-                                     the absence of a trailing slash).
-        :param bastion_secret: (str) The secret key for the bastion host.
-        """
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.app_token = app_token
+
+        self.auth_server = auth_server
+        self.auth_secret = auth_secret
         self.bastion_server = bastion_server
         self.bastion_secret = bastion_secret
+        self.data_server = data_server
+        self.data_secret = data_secret
 
     # Auth
 
