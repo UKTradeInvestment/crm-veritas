@@ -1,7 +1,7 @@
 import os
 from setuptools import setup
 
-with open("ukti/datahub/bastion.py") as f:
+with open("ukti/datahub/bastion/__init__.py") as f:
     exec([l for l in f.readlines() if l.startswith("__version__ = ")][0])
 
 # Allow setup.py to be run from any path
