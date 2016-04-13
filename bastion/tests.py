@@ -67,9 +67,9 @@ class BastionTestCase(TestCase):
             body='{"this": "is", "some": "content"}',
             status=200,
             adding_headers={
-                Veritas.HEADER_NAME: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJz"
-                                     "ZXNzaW9uIjoic2Vzc2lvbi1pZCJ9.WjjrK_pMyDO2"
-                                     "nYxJ9vKD67M0kM4k0ZR7rwa-q_rwSzY"
+                Veritas.HEADER_NAME: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ"
+                                     "zZXNzaW9uIjoic2Vzc2lvbi1pZCJ9.WjjrK_pMyD"
+                                     "O2nYxJ9vKD67M0kM4k0ZR7rwa-q_rwSzY"
             },
             content_type='application/json'
         )
