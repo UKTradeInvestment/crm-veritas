@@ -105,4 +105,4 @@ def endpoint():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5002)
+    app.run(debug=bool(os.getenv("DEBUG", "").lower() == "true"), port=5002)
