@@ -61,22 +61,27 @@ class BastionTestCase(TestCase):
     @responses.activate
     def test_good_data_response(self):
 
+        session_token = ("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzZXNzaW9uIjo"
+                         "ic2Vzc2lvbi1pZCJ9.WjjrK_pMyDO2nYxJ9vKD67M0kM4k0ZR7rw"
+                         "a-q_rwSzY")
+
         responses.add(
             responses.GET,
             "{}/".format(self.DATA_SERVER),
             body='{"this": "is", "some": "content"}',
             status=200,
-            adding_headers={
-                Veritas.HEADER_NAME: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ"
-                                     "zZXNzaW9uIjoic2Vzc2lvbi1pZCJ9.WjjrK_pMyD"
-                                     "O2nYxJ9vKD67M0kM4k0ZR7rwa-q_rwSzY"
-            },
+            adding_headers={Veritas.HEADER_NAME: session_token},
             content_type='application/json'
         )
 
-        self.bastion.set_cookie("localhost", Veritas.COOKIE, "")
+        self.bastion.set_cookie("localhost", Veritas.COOKIE, "irrelevant")
         r = self.bastion.get("/")
         self.assertEqual(r.status_code, 200)
         data = json.loads(r.get_data().decode("utf-8"))
         self.assertEqual(data["this"], "is")
         self.assertEqual(data["some"], "content")
+        print(r.headers["Set-Cookie"])
+        self.assertEqual(
+            r.headers["Set-Cookie"].split(";")[0].split("=")[1],
+            session_token
+        )

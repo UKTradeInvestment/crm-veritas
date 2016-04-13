@@ -53,14 +53,15 @@ class BastionView(View):
         data_response = self._issue_request_to_data_server()
 
         if data_response.status_code >= 300:
-            return flask.abort(data_response.status_code, data_response.text)
+            raise BadRequestException(
+                data_response.text, data_response.status_code)
 
         response = flask.make_response(
             data_response.text,
             data_response.status_code
         )
 
-        # There's an auth token in the data server's response header, so we set
+        # There's a session id in the data server's response header, so we set
         # it as a new cookie.
         response.set_cookie(
             self.veritas.COOKIE,

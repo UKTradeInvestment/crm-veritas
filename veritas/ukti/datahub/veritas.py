@@ -140,10 +140,7 @@ class Veritas(object):
         :param headers: (dict) All of the headers returned from the data
                                server.
         """
-        return jwt.decode(
-            headers[self.HEADER_NAME],
-            self.bastion_secret
-        )[self.SESSION]
+        return headers[self.HEADER_NAME]
 
     # Data
 
@@ -200,3 +197,15 @@ class Veritas(object):
 
         # Parse that user data for useful information
         return jwt.decode(response.json()["id_token"], verify=False)
+
+    def generate_session_token(self, session):
+        """
+        The session id is created by the data server, but we roll it into a jwt
+        before sending it back to the bastion server.  Mostly this is just a
+        convenience so that when it comes back with a later request, we know
+        that whatever is in the header, it's always a jwt, regardless of what
+        it contains.
+
+        :param session: (str) A session id
+        """
+        return jwt.encode({self.SESSION: session}, self.bastion_secret)

@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from ukti.datahub.veritas import Veritas, TokenError
 
 
-class VeritasTest(TestCase):
+class VeritasTestCase(TestCase):
 
     def setUp(self):
 

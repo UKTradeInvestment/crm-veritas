@@ -5,7 +5,6 @@ from unittest import TestCase, mock
 from urllib.parse import quote, urlparse
 
 from ukti.datahub.auth import app
-from ukti.datahub.veritas import Veritas
 
 
 class AuthTestCase(TestCase):

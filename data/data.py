@@ -9,7 +9,7 @@ import os
 
 from dotenv import load_dotenv
 
-from ukti.datahub.veritas import Veritas
+from ukti.datahub.veritas import Veritas, TokenError
 
 # Tap the environment file if it's available
 if os.path.exists("/etc/veritas.conf"):
@@ -57,7 +57,7 @@ def get_mock_response():
     proper app, this would be where most of the work goes.
     """
 
-    return_token = jwt.encode({"session": "123456789"}, veritas.bastion_secret)
+    return_token = veritas.generate_session_token("123456789")
 
     response = flask.jsonify({"this": "is", "an": "arbitrary response"})
     response.headers[veritas.HEADER_NAME] = return_token
@@ -71,7 +71,7 @@ def endpoint():
     try:
         bastion = veritas.get_token_from_headers(flask.request.headers)
     except TokenError as e:
-        return flask.abort(e.status_code, description=str(e))
+        flask.abort(e.status_code, description=str(e))
 
     # If there's a session in the jwt and it resolves to a legit user, we can
     # safely assume that the user is authenticated
