@@ -59,17 +59,17 @@ class VeritasTestCase(TestCase):
         responses.add(
             responses.POST,
             "https://login.microsoftonline.com/app-token/oauth2/token",
-            body='{"id_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvaWQiOj'
-                 'EyMywiZmFtaWx5X25hbWUiOiJGYW1pbHkiLCJnaXZlbl9uYW1lIjoiR2l2ZW4'
-                 'ifQ.MDfAGcDi7XjNhbLnEkQHexOnbzPsSVbSfBRrjkVT4xI"}',
+            body='{"id_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvaWQiO'
+                 'jEyMywiZmFtaWx5X25hbWUiOiJGYW1pbHkiLCJnaXZlbl9uYW1lIjoiR2l2Z'
+                 'W4ifQ.MDfAGcDi7XjNhbLnEkQHexOnbzPsSVbSfBRrjkVT4xI"}',
             status=200,
             content_type='application/json'
         )
 
         info = self.veritas.get_identity_from_nested_token({
-            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2RlIjoidGhp"
-                     "cyBpcyBhIGNvZGUifQ.piTpeboWlE6pYu7t6hHI2mNECvuLtDNp2R"
-                     "AIDDoiJP4"
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2RlIjoidGhpcyB"
+                     "pcyBhIGNvZGUifQ.piTpeboWlE6pYu7t6hHI2mNECvuLtDNp2RAIDDoi"
+                     "JP4"
         })
 
         self.assertEqual(info["oid"], 123)
@@ -83,6 +83,6 @@ class VeritasTestCase(TestCase):
             self.veritas.get_identity_from_nested_token({"token": "broken"})
         with self.assertRaises(TokenError):
             self.veritas.get_identity_from_nested_token({
-                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub3QiOiJhIHRv"
-                         "a2VuIn0.YxSUDNLukXozOo3JbXsr8XvCzAsa13ZK0vtF2nX-wn4"
+                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub3QiOiJhIHR"
+                         "va2VuIn0.YxSUDNLukXozOo3JbXsr8XvCzAsa13ZK0vtF2nX-wn4"
             })
