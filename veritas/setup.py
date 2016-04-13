@@ -1,7 +1,8 @@
 import os
 from setuptools import setup
 
-exec(open("ukti/datahub/veritas.py").read())
+with open("ukti/datahub/veritas.py") as f:
+    exec([l.strip() for l in f.readlines() if "__version__ = " in l][0])
 
 # Allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
@@ -12,7 +13,7 @@ readme_path = os.path.join(os.path.dirname(__file__), "README.md")
 with open(readme_path) as readme:
     setup(
         name="ukti.datahub.veritas",
-        version=".".join([str(_) for _ in Veritas.__version__]),
+        version=".".join([str(_) for _ in __version__]),
         packages=["ukti", "ukti.datahub"],
         namespace_packages=["ukti.datahub", "ukti.datahub"],
         include_package_data=True,

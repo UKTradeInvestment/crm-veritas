@@ -10,22 +10,19 @@ from ukti.datahub.veritas import Veritas, TokenError
 class VeritasTest(TestCase):
 
     def setUp(self):
-        
-        self.veritas = Veritas()
+
+        self.veritas = Veritas(
+            client_id="client-id",
+            client_secret="client-secret",
+            app_token="app-token",
+            auth_server="http://localhost:5000",
+            auth_secret="auth-secret",
+            bastion_server="http://localhost:5001",
+            bastion_secret="bastion-secret",
+            data_server="http://localhost:5002",
+        )
 
         # Force the class variables to something we control for these tests
-
-        self.veritas.AUTH_SERVER = "http://localhost:5000"
-        self.veritas.BASTION_SERVER = "http://localhost:5001"
-        self.veritas.DATA_SERVER = "http://localhost:5002"
-
-        self.veritas.AUTH_SECRET = "auth-secret"
-        self.veritas.BASTION_SECRET = "bastion-secret"
-
-        self.veritas.CLIENT_ID = "client-id"
-        self.veritas.CLIENT_SECRET = "client-secret"
-
-        self.veritas.APP_TOKEN = "app-token"
 
     def test_get_auth_url(self):
         self.assertEqual(
@@ -41,7 +38,7 @@ class VeritasTest(TestCase):
     def test_get_auth_cookie(self):
         code = "my-code"
         secret = "some secret"
-        self.veritas.AUTH_SECRET = secret
+        self.veritas.auth_secret = secret
         self.assertEqual(
             jwt.decode(self.veritas.get_auth_cookie(code), secret)["code"],
             code
@@ -57,10 +54,7 @@ class VeritasTest(TestCase):
     @responses.activate
     def test_get_identity_from_nested_token(self):
 
-        self.veritas.AUTH_SECRET = "secret"
-        self.veritas.AZURE_TOKEN = "{}/app-token/oauth2/token".format(
-            self.veritas.AZURE
-        )
+        self.veritas.auth_secret = "secret"
 
         responses.add(
             responses.POST,

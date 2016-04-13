@@ -19,10 +19,7 @@ class BastionView(View):
 
     def __init__(self):
         View.__init__(self)
-        self.veritas = Veritas(
-            bastion_server=os.getenv("BASTION_SERVER"),
-            bastion_secret=os.getenv("BASTION_SECRET")
-        )
+        self.veritas = Veritas.build(os.environ)
 
     def _test_cookie(self):
 
