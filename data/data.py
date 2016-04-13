@@ -4,8 +4,9 @@
 #
 
 import flask
-import jwt
 import os
+import random
+import string
 
 from dotenv import load_dotenv
 
@@ -16,7 +17,10 @@ if os.path.exists("/etc/veritas.conf"):
     load_dotenv("/etc/veritas.conf")
 
 app = flask.Flask(__name__)
-veritas = Veritas(bastion_secret=os.getenv("BASTION_SECRET"))
+app.secret_key = ''.join(
+    random.choice(string.ascii_letters + string.digits) for _ in range(64))
+
+veritas = Veritas.build(os.environ)
 
 
 class TokenVerificationError(Exception):
@@ -67,11 +71,15 @@ def get_mock_response():
 
 @app.route('/arbitrary-endpoint')
 def endpoint():
+    """
+    This is the only part of this demo that means anything.  You can ignore the
+    rest as effectively stand-in code.
+    """
 
     try:
         bastion = veritas.get_token_from_headers(flask.request.headers)
     except TokenError as e:
-        flask.abort(e.status_code, description=str(e))
+        return flask.abort(e.status_code, description=str(e))
 
     # If there's a session in the jwt and it resolves to a legit user, we can
     # safely assume that the user is authenticated
@@ -97,5 +105,4 @@ def endpoint():
 
 
 if __name__ == '__main__':
-    app.secret_key = veritas.DATA_SECRET
     app.run(debug=True, port=5002)
